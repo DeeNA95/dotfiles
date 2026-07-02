@@ -82,11 +82,66 @@ install_zap() {
 
 install_packages() {
     if command -v brew >/dev/null 2>&1; then
+        echo "Detected Homebrew. Installing packages..."
         brew install starship zoxide eza bat fzf fastfetch tmux
     elif command -v apt-get >/dev/null 2>&1; then
+        echo "Detected apt-get. Installing packages..."
         sudo apt-get update
-        sudo apt-get install -y zoxide fzf bat fastfetch tmux eza 2>/dev/null || sudo apt-get install -y zoxide fzf batcat tmux
-        if ! command -v starship &> /dev/null; then curl -sS https://starship.rs/install.sh | sh -s -- -y; fi
+
+        # Try to install eza via official repo if not already available
+        if ! command -v eza &> /dev/null; then
+            echo "Setting up eza community repository..."
+            sudo mkdir -p /etc/apt/keyrings
+            wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | sudo gpg --dearmor --yes -o /etc/apt/keyrings/gierdot.gpg
+            echo "deb [signed-by=/etc/apt/keyrings/gierdot.gpg] http://deb.gierdot.net/ stable main" | sudo tee /etc/apt/sources.list.d/gierdot.list
+            sudo apt-get update
+        fi
+
+        sudo apt-get install -y zoxide fzf bat fastfetch eza tmux 2>/dev/null || sudo apt-get install -y zoxide fzf batcat tmux
+
+        # starship recommendation for linux is script
+        if ! command -v starship &> /dev/null; then
+             curl -sS https://starship.rs/install.sh | sh -s -- -y
+        fi
+
+        # Cargo fallback for eza
+        if command -v cargo >/dev/null 2>&1; then
+            echo "Installing eza via cargo..."
+            rustc_version=$(rustc --version | awk '{print $2}')
+            # Need 1.82.0+ for latest eza
+            if [[ "$rustc_version" < "1.82.0" ]]; then
+                echo "rustc version $rustc_version is older than 1.82.0. Installing eza 0.20.18..."
+                cargo install eza --version 0.20.18
+            else
+                cargo install eza
+            fi
+        fi
+
+        # fix bat command name on ubuntu if installed as batcat
+        if command -v batcat >/dev/null 2>&1 && ! command -v bat >/dev/null 2>&1; then
+            mkdir -p ~/.local/bin
+            ln -sf /usr/bin/batcat ~/.local/bin/bat
+        fi
+
+    elif command -v dnf >/dev/null 2>&1; then
+        echo "Detected dnf. Installing packages..."
+        sudo dnf install -y starship zoxide eza bat fzf fastfetch tmux
+    elif command -v pacman >/dev/null 2>&1; then
+        echo "Detected pacman. Installing packages..."
+        sudo pacman -S --noconfirm starship zoxide eza bat fzf fastfetch tmux
+    elif command -v conda >/dev/null 2>&1; then
+        echo "Detected Conda. Installing packages..."
+        conda install -y -c conda-forge starship zoxide bat fzf eza tmux
+    else
+        echo "No supported package manager found. Attempting manual installs..."
+        # Starship
+        if ! command -v starship &> /dev/null; then
+             curl -sS https://starship.rs/install.sh | sh -s -- -y
+        fi
+        # Zoxide
+        if ! command -v zoxide &> /dev/null; then
+            curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash
+        fi
     fi
 }
 
