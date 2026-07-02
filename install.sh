@@ -104,19 +104,6 @@ install_packages() {
              curl -sS https://starship.rs/install.sh | sh -s -- -y
         fi
 
-        # Cargo fallback for eza
-        if command -v cargo >/dev/null 2>&1; then
-            echo "Installing eza via cargo..."
-            rustc_version=$(rustc --version | awk '{print $2}')
-            # Need 1.82.0+ for latest eza
-            if [[ "$rustc_version" < "1.82.0" ]]; then
-                echo "rustc version $rustc_version is older than 1.82.0. Installing eza 0.20.18..."
-                cargo install eza --version 0.20.18
-            else
-                cargo install eza
-            fi
-        fi
-
         # fix bat command name on ubuntu if installed as batcat
         if command -v batcat >/dev/null 2>&1 && ! command -v bat >/dev/null 2>&1; then
             mkdir -p ~/.local/bin
@@ -141,6 +128,54 @@ install_packages() {
         # Zoxide
         if ! command -v zoxide &> /dev/null; then
             curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash
+        fi
+    fi
+
+    # Universal fallback for eza
+    if ! command -v eza &> /dev/null; then
+        echo "eza not found. Attempting universal fallbacks..."
+        if command -v cargo >/dev/null 2>&1; then
+            echo "Installing eza via cargo..."
+            rustc_version=$(rustc --version | awk '{print $2}')
+            if [[ "$rustc_version" < "1.82.0" ]]; then
+                cargo install eza --version 0.20.18
+            else
+                cargo install eza
+            fi
+        else
+            echo "Cargo not found. Attempting to download pre-compiled binary from GitHub..."
+            ARCH=$(uname -m)
+            OS=$(uname -s)
+            
+            if [ "$OS" = "Linux" ]; then
+                if [ "$ARCH" = "x86_64" ]; then
+                    EZA_URL="https://github.com/eza-community/eza/releases/latest/download/eza_x86_64-unknown-linux-gnu.tar.gz"
+                elif [ "$ARCH" = "aarch64" ]; then
+                    EZA_URL="https://github.com/eza-community/eza/releases/latest/download/eza_aarch64-unknown-linux-gnu.tar.gz"
+                fi
+            elif [ "$OS" = "Darwin" ]; then
+                if [ "$ARCH" = "x86_64" ]; then
+                    EZA_URL="https://github.com/eza-community/eza/releases/latest/download/eza_x86_64-apple-darwin.tar.gz"
+                elif [ "$ARCH" = "arm64" ]; then
+                    EZA_URL="https://github.com/eza-community/eza/releases/latest/download/eza_aarch64-apple-darwin.tar.gz"
+                fi
+            fi
+
+            if [ -n "${EZA_URL:-}" ]; then
+                echo "Downloading from $EZA_URL ..."
+                TMP_DIR=$(mktemp -d)
+                if curl -sL "$EZA_URL" | tar xz -C "$TMP_DIR"; then
+                    mkdir -p "$HOME/.local/bin"
+                    mv "$TMP_DIR/eza" "$HOME/.local/bin/eza"
+                    chmod +x "$HOME/.local/bin/eza"
+                    echo "eza installed to $HOME/.local/bin/eza"
+                else
+                    echo "Failed to download or extract eza."
+                fi
+                rm -rf "$TMP_DIR"
+            else
+                echo "Could not determine appropriate binary for OS=$OS ARCH=$ARCH."
+            fi
         fi
     fi
 }
