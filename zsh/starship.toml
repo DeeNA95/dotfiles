@@ -1,0 +1,59 @@
+# Starship Configuration for AI/ML Developers
+# Premium, minimal, and fast
+
+format = """
+[󰀄 ](bold fuchsia)\
+$os\
+$directory\
+$git_branch\
+$git_status\
+$python\
+$golang\
+$c\
+$cpp\
+$line_break\
+$character"""
+
+[directory]
+style = "bold blue"
+truncation_length = 3
+truncation_symbol = "…/"
+
+[git_branch]
+symbol = "󰊢 "
+style = "bold fuchsia"
+
+[git_status]
+style = "bold red"
+
+[python]
+symbol = "󱔎 "
+style = "bold yellow"
+pyenv_prefix = "pyenv "
+format = 'via [${symbol}${version}]($style) '
+
+[golang]
+symbol = "󰟓 "
+style = "bold cyan"
+format = 'via [${symbol}${version}]($style) '
+
+[c]
+symbol = " "
+style = "bold blue"
+format = 'via [${symbol}${version}]($style) '
+
+[cpp]
+symbol = " "
+style = "bold magenta"
+format = 'via [${symbol}${version}]($style) '
+
+[os]
+disabled = false
+style = "bold white"
+
+[os.symbols]
+Macos = "󰀵 "
+
+[character]
+success_symbol = "[➜](bold green)"
+error_symbol = "[➜](bold red)"
