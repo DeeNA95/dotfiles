@@ -1,0 +1,5 @@
+google-antigravity
+exa_py
+anthropic
+fastapi
+uvicorn

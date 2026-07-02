@@ -1,0 +1,12 @@
+# General
+.DS_Store
+.netrwhist
+
+# Vim/Neovim
+*.swp
+*.swo
+Session.vim
+*~
+
+# Lazy.nvim
+plugin/

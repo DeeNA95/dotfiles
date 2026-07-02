@@ -205,5 +205,17 @@ fi
 # 3. WezTerm
 create_symlink "$DOTFILES_DIR/wezterm/wezterm.lua" "$HOME/.config/wezterm/wezterm.lua"
 
+# 4. Neovim
+echo ""
+echo "======================================"
+echo "    Setting up Neovim..."
+echo "======================================"
+bash "$DOTFILES_DIR/nvim/install_deps.sh"
+create_symlink "$DOTFILES_DIR/nvim" "$HOME/.config/nvim"
+
+export PATH="$HOME/.local/bin:$PATH"
+echo "🔌 Installing Neovim plugins..."
+nvim --headless "+Lazy! sync" +qa
+
 echo ""
 echo "✔ Setup complete! Please restart your terminal."
