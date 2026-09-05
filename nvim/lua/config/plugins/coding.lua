@@ -78,7 +78,7 @@ return {
         { "<leader>d", group = "debug" },
         { "<leader>x", group = "diagnostics" },
         { "<leader>S", group = "session" },
-        { "<leader>m", group = "molten/markdown" },
+        { "<leader>m", group = "notebook/markdown" },
       },
     },
   },

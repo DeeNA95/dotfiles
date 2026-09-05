@@ -163,3 +163,6 @@ export PATH="/Users/dna/.local/bin:$PATH"
 
 # Added by Antigravity IDE
 export PATH="/Users/dna/.antigravity-ide/antigravity-ide/bin:$PATH"
+
+# opencode
+export PATH=/Users/dna/.opencode/bin:$PATH

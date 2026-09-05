@@ -1,5 +1,6 @@
 google-antigravity
 exa_py
 anthropic
+openai
 fastapi
 uvicorn

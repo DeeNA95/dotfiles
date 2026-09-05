@@ -4,6 +4,7 @@
 CONFIG_DIR="$HOME/.config/nvim"
 LOCAL_DIR="$HOME/.local"
 LOCAL_BIN="$LOCAL_DIR/bin"
+NVIM_PYTHON_ENV="$LOCAL_DIR/share/nvim/python3"
 NVIM_VERSION="0.11.6"
 
 echo "🚀 Starting Neovim configuration setup..."
@@ -128,6 +129,46 @@ install_luarocks() {
     esac
 }
 
+install_rust_components() {
+    if ! command -v rustup >/dev/null 2>&1; then
+        echo "⚠️ rustup not found. Install Rust from https://rustup.rs/ for rustfmt and clippy support."
+        return 0
+    fi
+
+    echo "📦 Ensuring Rust formatter and linter components are installed..."
+    rustup component add rustfmt clippy
+}
+
+install_notebook_python() {
+    if ! command -v uv >/dev/null 2>&1; then
+        echo "❌ uv is required for the Neovim Python provider and notebook tools."
+        return 1
+    fi
+
+    if [ ! -x "$NVIM_PYTHON_ENV/bin/python" ]; then
+        echo "📦 Creating the Neovim Python environment with uv..."
+        uv venv "$NVIM_PYTHON_ENV"
+    fi
+
+    echo "📦 Installing the Molten and Jupytext Python dependencies with uv..."
+    uv pip install --python "$NVIM_PYTHON_ENV/bin/python" --upgrade \
+        pynvim jupyter-client ipykernel nbformat jupytext
+}
+
+register_molten_plugin() {
+    MOLTEN_DIR="$LOCAL_DIR/share/nvim/lazy/molten-nvim"
+    if [ ! -d "$MOLTEN_DIR" ]; then
+        echo "ℹ️ Molten will register when lazy.nvim installs it on first launch."
+        return 0
+    fi
+
+    echo "📦 Registering Molten with the isolated Neovim Python provider..."
+    nvim -u NORC --headless \
+        --cmd "let g:python3_host_prog='$NVIM_PYTHON_ENV/bin/python'" \
+        --cmd "execute 'set runtimepath+=' . fnameescape('$MOLTEN_DIR')" \
+        +UpdateRemotePlugins +qa
+}
+
 # 2. Install Neovim if needed
 if ! check_nvim_version; then
     install_nvim
@@ -138,6 +179,12 @@ if ! check_luarocks_version; then
     install_luarocks
 fi
 
+# 2c. Install Rust components used by rust-analyzer/conform.nvim
+install_rust_components
+
+# 2d. Install the isolated Python provider used by Molten and Jupytext
+install_notebook_python
+
 # 5. Add ~/.local/bin to PATH for the current session if not present
 case ":$PATH:" in
     *":$LOCAL_BIN:"*) ;;
@@ -146,3 +193,5 @@ case ":$PATH:" in
         echo "⚠️ Added $LOCAL_BIN to current session PATH."
         ;;
 esac
+
+register_molten_plugin

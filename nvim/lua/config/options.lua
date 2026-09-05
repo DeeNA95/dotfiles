@@ -17,7 +17,7 @@ opt.showtabline = 2                -- Always show tabs
 opt.title = true                   -- Set window title
 opt.cursorline = true              -- Highlight current line
 opt.signcolumn = "yes"             -- Always show sign column
-opt.scrolloff = 8                  -- Lines of context above/below cursor
+opt.scrolloff = 0                  -- Allow scrolling to the first and last lines
 opt.sidescrolloff = 8              -- Columns of context to the left/right
 opt.laststatus = 3                 -- Global statusline
 opt.showcmd = false                -- Don't show command in last line
@@ -67,4 +67,3 @@ opt.wildmode = "longest:full,full"    -- Better command line completion
 opt.spelllang = { "en" }              -- Spell check language
 opt.grepprg = "rg --vimgrep"          -- Use ripgrep for grep if available
 opt.grepformat = "%f:%l:%c:%m"        -- Format for grep results
-

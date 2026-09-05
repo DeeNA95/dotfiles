@@ -2,22 +2,6 @@
 local function setup_autocmds()
   local autocmd = vim.api.nvim_create_autocmd
   local augroup = vim.api.nvim_create_augroup
-  local scroll_margin = 8
-
-  local cursor_margin_group = augroup("CursorBottomMargin", { clear = true })
-  autocmd({ "BufEnter", "CursorMoved", "WinEnter" }, {
-    group = cursor_margin_group,
-    callback = function()
-      local win = vim.api.nvim_get_current_win()
-      local buf = vim.api.nvim_win_get_buf(win)
-
-      if vim.bo[buf].buftype ~= "" or vim.api.nvim_win_get_height(win) <= scroll_margin then
-        return
-      end
-
-      vim.cmd(([[silent! execute "normal! zb%d\<C-e>"]]):format(scroll_margin))
-    end,
-  })
 
   -- Python specific settings
   local python_group = augroup("PythonSettings", { clear = true })

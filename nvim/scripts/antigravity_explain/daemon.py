@@ -23,6 +23,23 @@ class Payload(BaseModel):
     chat_history: str | None = ""
 
 
+async def stream_openai_compatible(
+    *, api_key: str, base_url: str | None, model: str, prompt_text: str
+):
+    from openai import AsyncOpenAI
+
+    client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+    response = await client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt_text}],
+        stream=True,
+    )
+    async for chunk in response:
+        content = chunk.choices[0].delta.content
+        if content:
+            yield content
+
+
 async def generate_response(prompt_text: str, strip_markdown: bool = False):
     """
     Generator that streams the response from the active LLM.
@@ -37,7 +54,22 @@ async def generate_response(prompt_text: str, strip_markdown: bool = False):
     # Actually, a simple prompt is usually enough to prevent backticks,
     # but we will just pass it straight through for now.
 
-    # 1. Gemini (via Antigravity SDK)
+    # 1. DeepSeek V4 Pro (primary reviewer and code explainer)
+    deepseek_key = os.environ.get("DEEPSEEK_API_KEY")
+    if deepseek_key:
+        try:
+            async for content in stream_openai_compatible(
+                api_key=deepseek_key,
+                base_url="https://api.deepseek.com",
+                model="deepseek-v4-pro",
+                prompt_text=prompt_text,
+            ):
+                yield content.replace("```", "") if strip_markdown else content
+            return
+        except Exception as e:
+            yield f"\n[DeepSeek V4 Pro Error: {e}]\n"
+
+    # 2. Gemini (via Antigravity SDK)
     gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GEMINI_KEY")
     if gemini_key:
         # Set it explicitly in the environment for the SDK if it's only in GEMINI_KEY
@@ -57,52 +89,35 @@ async def generate_response(prompt_text: str, strip_markdown: bool = False):
             pass
             # yield f"\n[Gemini Error: {e}]\n"
 
-    # 2. OpenRouter (DeepSeek V4 Flash)
+    # 3. OpenRouter (DeepSeek V4 Flash)
     if os.environ.get("OPENROUTER_API_KEY"):
         try:
-            from openai import AsyncOpenAI
-
-            client = AsyncOpenAI(
-                api_key=os.environ.get("OPENROUTER_API_KEY"),
+            async for content in stream_openai_compatible(
+                api_key=os.environ["OPENROUTER_API_KEY"],
                 base_url="https://openrouter.ai/api/v1",
-            )
-            response = await client.chat.completions.create(
                 model="deepseek/deepseek-v4-flash",
-                messages=[{"role": "user", "content": prompt_text}],
-                stream=True,
-            )
-            async for chunk in response:
-                content = chunk.choices[0].delta.content
-                if content:
-                    if strip_markdown:
-                        content = content.replace("```", "")
-                    yield content
+                prompt_text=prompt_text,
+            ):
+                yield content.replace("```", "") if strip_markdown else content
             return
         except Exception as e:
             yield f"\n[OpenRouter Error: {e}]\n"
 
-    # 3. OpenAI (GPT-4o mini)
+    # 4. OpenAI
     if os.environ.get("OPENAI_API_KEY"):
         try:
-            from openai import AsyncOpenAI
-
-            client = AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-            response = await client.chat.completions.create(
+            async for content in stream_openai_compatible(
+                api_key=os.environ["OPENAI_API_KEY"],
+                base_url=None,
                 model="gpt-5.4-mini",
-                messages=[{"role": "user", "content": prompt_text}],
-                stream=True,
-            )
-            async for chunk in response:
-                content = chunk.choices[0].delta.content
-                if content:
-                    if strip_markdown:
-                        content = content.replace("```", "")
-                    yield content
+                prompt_text=prompt_text,
+            ):
+                yield content.replace("```", "") if strip_markdown else content
             return
         except Exception as e:
             yield f"\n[OpenAI Error: {e}]\n"
 
-    # 4. Claude (Claude 3.5 Haiku)
+    # 5. Claude
     if os.environ.get("CLAUDE_API_KEY"):
         try:
             from anthropic import AsyncAnthropic
@@ -153,7 +168,7 @@ async def explain(payload: Payload):
         except Exception as e:
             context = f"Failed to retrieve Exa search context: {e}"
 
-    prompt = f"""You are an expert software engineer and a highly advanced code explainer assistant.
+    prompt = f"""You are Pennyworth, a principal code reviewer and highly advanced code explainer.
 Analyze the following {payload.filetype} code snippet.
 
 Workspace Framework Info: {payload.framework_context}
@@ -174,7 +189,8 @@ Full File Context (For reference only):
 Documentation Context from web search:
 {context}
 
-Please provide a concise, markdown-formatted explanation of the code snippet, highlighting its purpose, potential issues, and best practices. 
+Act as the first reviewer: prioritize correctness bugs, security risks, regressions, and missing tests before style suggestions.
+Provide a concise, markdown-formatted explanation of the code snippet, highlighting its purpose, potential issues, and best practices.
 If there are any LSP Errors or Warnings, explain why they are happening and provide the exact fixed code to resolve them. Do not use conversational filler, just give the explanation.
 """
     return StreamingResponse(generate_response(prompt), media_type="text/plain")
