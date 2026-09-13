@@ -83,7 +83,7 @@ install_zap() {
 install_packages() {
     if command -v brew >/dev/null 2>&1; then
         echo "Detected Homebrew. Installing packages..."
-        brew install starship zoxide eza bat fzf fastfetch tmux
+        brew install starship zoxide eza bat fzf fastfetch tmux atuin direnv git-delta thefuck
     elif command -v apt-get >/dev/null 2>&1; then
         echo "Detected apt-get. Installing packages..."
         sudo apt-get update
@@ -178,6 +178,21 @@ install_packages() {
             fi
         fi
     fi
+
+    # Best-effort extras: atuin, direnv, delta, thefuck
+    # (Homebrew handles these above; this covers other package managers.)
+    if ! command -v brew >/dev/null 2>&1; then
+        echo "Installing extra tools (best effort)..."
+        if command -v apt-get >/dev/null 2>&1; then
+            sudo apt-get install -y direnv git-delta thefuck 2>/dev/null || true
+            curl -sS https://raw.githubusercontent.com/atuinsh/atuin/main/install.sh | bash -s -- --quiet 2>/dev/null || true
+        elif command -v dnf >/dev/null 2>&1; then
+            sudo dnf install -y atuin direnv git-delta thefuck 2>/dev/null || true
+        elif command -v pacman >/dev/null 2>&1; then
+            sudo pacman -S --noconfirm atuin direnv git-delta thefuck 2>/dev/null || true
+        fi
+        command -v thefuck >/dev/null 2>&1 || pip install --user thefuck 2>/dev/null || true
+    fi
 }
 
 # Run Installations
@@ -194,6 +209,13 @@ echo "======================================"
 # 1. Zsh & Starship
 create_symlink "$DOTFILES_DIR/zsh/.zshrc" "$HOME/.zshrc"
 create_symlink "$DOTFILES_DIR/zsh/starship.toml" "$HOME/.config/starship.toml"
+
+# 1b. Git (delta pager, user identity)
+create_symlink "$DOTFILES_DIR/git/.gitconfig" "$HOME/.gitconfig"
+
+# 1c. bat themes (tokyonight for bat + delta)
+create_symlink "$DOTFILES_DIR/bat/themes/tokyonight_night.tmTheme" "$HOME/.config/bat/themes/tokyonight_night.tmTheme"
+command -v bat >/dev/null 2>&1 && bat cache --build >/dev/null
 
 # 2. Tmux
 create_symlink "$DOTFILES_DIR/tmux/tmux.conf" "$HOME/.tmux.conf"

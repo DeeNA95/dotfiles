@@ -1,0 +1,35 @@
+[user]
+	name = Derek Amuna
+	email = dadadee02@outlook.com
+
+[init]
+	defaultBranch = main
+
+[core]
+	pager = delta
+	editor = nvim
+
+[interactive]
+	diffFilter = delta --color-only
+
+[delta]
+	navigate = true
+	line-numbers = true
+	side-by-side = true
+	light = false
+	syntax-theme = tokyonight_night
+
+[merge]
+	conflictstyle = zdiff3
+
+[diff]
+	colorMoved = default
+
+[fetch]
+	prune = true
+
+[pull]
+	rebase = false
+
+[push]
+	autoSetupRemote = true

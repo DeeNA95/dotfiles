@@ -1,16 +1,46 @@
 # Created by Zap installer
 [ -f "${XDG_DATA_HOME:-$HOME/.local/share}/zap/zap.zsh" ] && source "${XDG_DATA_HOME:-$HOME/.local/share}/zap/zap.zsh"
+
+# == Plugin configuration (must be set before the plugin loads) ==
+ZSH_AUTOSUGGEST_STRATEGY=(history completion)
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#565f89'
+
+# == Plugins ==
 plug "zsh-users/zsh-autosuggestions"
 plug "zap-zsh/supercharge"
-plug "zsh-users/zsh-syntax-highlighting"
 plug "zsh-users/zsh-history-substring-search"
 plug "zsh-users/zsh-completions"
+zmodload zsh/langinfo  # web-search's omz_urlencode needs $langinfo[CODESET]
 plug "zap-zsh/web-search"
-# plug "zap-zsh/git" -- Relying on system git and manual aliases
+# NOTE: syntax-highlighting must be sourced last, after all other ZLE plugins.
+plug "zsh-users/zsh-syntax-highlighting"
 
-# Load and initialise completion system
+# Docker CLI completions (fpath must be set before compinit)
+fpath=(/Users/dna/.docker/completions $fpath)
+
+# Load and initialise completion system (once)
 autoload -Uz compinit
+mkdir -p "$HOME/.cache/zsh"
 compinit
+
+# == Completion styling ==
+zstyle ':completion:*' menu select
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'l:|=* r:|=*'
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+zstyle ':completion:*' use-cache on
+zstyle ':completion:*' cache-path "$HOME/.cache/zsh/zcompcache"
+zstyle ':completion:*' group-name ''
+zstyle ':completion:*:descriptions' format '%F{yellow}-- %d --%f'
+
+# == Key bindings ==
+# History substring search on Up/Down
+if (( ${+terminfo[kcuu1]} )); then
+    bindkey "${terminfo[kcuu1]}" history-substring-search-up
+    bindkey "${terminfo[kcud1]}" history-substring-search-down
+else
+    bindkey '^[[A' history-substring-search-up
+    bindkey '^[[B' history-substring-search-down
+fi
 
 # == Terminal settings ==
 export TERM=xterm-256color
@@ -20,7 +50,15 @@ export LANG=en_US.UTF-8
 HISTSIZE=10000
 SAVEHIST=10000
 setopt HIST_IGNORE_DUPS
+setopt HIST_REDUCE_BLANKS
+setopt HIST_VERIFY
+setopt EXTENDED_HISTORY
 setopt SHARE_HISTORY
+
+# == Shell behaviour ==
+setopt AUTO_CD
+setopt INTERACTIVE_COMMENTS
+setopt NO_BEEP
 
 # == PATH configuration ==
 export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
@@ -35,11 +73,11 @@ export GOOGLE_GENAI_USE_VERTEXAI=true
 export GOOGLE_CLOUD_PROJECT=zeta-turbine-457610-h4
 export GOOGLE_CLOUD_LOCATION=us-central1
 
-if [ -f '/Users/dna/google-cloud-sdk/path.zsh.inc' ]; then
-    source '/Users/dna/google-cloud-sdk/path.zsh.inc'
+if [ -f "$HOME/google-cloud-sdk/path.zsh.inc" ]; then
+    source "$HOME/google-cloud-sdk/path.zsh.inc"
 fi
-if [ -f '/Users/dna/google-cloud-sdk/completion.zsh.inc' ]; then
-    source '/Users/dna/google-cloud-sdk/completion.zsh.inc'
+if [ -f "$HOME/google-cloud-sdk/completion.zsh.inc" ]; then
+    source "$HOME/google-cloud-sdk/completion.zsh.inc"
 fi
 
 # == API Keys & Secrets ==
@@ -47,8 +85,10 @@ if [[ -f ~/.secrets ]]; then
     source ~/.secrets
 fi
 
-# SSH key loading
-ssh-add ~/.ssh/id_ed25519_personal 2>/dev/null
+# SSH key loading (only if the agent doesn't already have identities)
+if ! ssh-add -l &>/dev/null; then
+    ssh-add ~/.ssh/id_ed25519_personal &>/dev/null
+fi
 
 # == Enhanced aliases ==
 alias dna='sudo'
@@ -64,7 +104,6 @@ alias ll='eza -al --icons --git --group-directories-first'
 alias la='eza -a --icons --git --group-directories-first'
 alias lt='eza --tree --level=2 --icons'
 alias preview='fzf --preview "bat --color=always --style=numbers --line-range=:500 {}"'
-
 
 # == Git aliases ==
 alias gs='git status'
@@ -91,14 +130,42 @@ if command -v zoxide > /dev/null; then
     eval "$(zoxide init zsh --cmd cd)"
 fi
 
-# Starship prompt
-eval "$(starship init zsh)"
+# fzf (Ctrl-T files, Alt-C cd; Ctrl-R is owned by atuin below)
+command -v fzf >/dev/null && eval "$(fzf --zsh)"
 
+# Atuin (searchable, synced shell history)
+command -v atuin >/dev/null && eval "$(atuin init zsh)"
 
+# direnv (per-project environment variables)
+command -v direnv >/dev/null && eval "$(direnv hook zsh)"
+
+# thefuck (command correction, invoked as `fuck`)
+command -v thefuck >/dev/null && eval "$(thefuck --alias)"
+
+# Starship prompt (initialise last so it wraps the final prompt)
+command -v starship >/dev/null && eval "$(starship init zsh)"
 
 # == Custom functions ==
 function mkcd() {
     mkdir -p "$1" && cd "$1"
+}
+
+function penny_health() {
+    local url="http://127.0.0.1:42069/v1/models"
+    local launch_state
+    launch_state=$(launchctl print "gui/$(id -u)/ai.penny.omlx" 2>/dev/null | awk -F'= ' '/^[[:space:]]*state = / {print $2; exit}')
+
+    if curl -fsS --max-time 3 "$url" >/dev/null 2>&1; then
+        printf 'oMLX: healthy (HTTP endpoint responding)'
+        [ -n "$launch_state" ] && printf ' | LaunchAgent: %s' "$launch_state"
+        printf '\n'
+        return 0
+    fi
+
+    printf 'oMLX: unhealthy (HTTP endpoint not responding)'
+    [ -n "$launch_state" ] && printf ' | LaunchAgent: %s' "$launch_state"
+    printf '\n'
+    return 1
 }
 
 function extract() {
@@ -123,11 +190,10 @@ function extract() {
 }
 
 # == Startup ==
-welcome_message() {
+# fastfetch on shell start; set NO_FASTFETCH=1 to disable.
+if [[ -o interactive && -z "$NO_FASTFETCH" ]] && command -v fastfetch >/dev/null; then
     fastfetch
-}
-
-welcome_message
+fi
 
 # == Professional Aliases (Force Override) ==
 unalias y 2>/dev/null
@@ -142,27 +208,23 @@ export PKG_CONFIG_PATH="/opt/homebrew/opt/imagemagick/lib/pkgconfig:$PKG_CONFIG_
 export DYLD_LIBRARY_PATH="/opt/homebrew/opt/ffmpeg/lib:$DYLD_LIBRARY_PATH"
 
 # bun completions
-[ -s "/Users/dna/.bun/_bun" ] && source "/Users/dna/.bun/_bun"
+[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
-
-# bun
-export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
-# The following lines have been added by Docker Desktop to enable Docker CLI completions.
-fpath=(/Users/dna/.docker/completions $fpath)
-autoload -Uz compinit
-compinit
-# End of Docker CLI completions
-
 
 # Added by Antigravity CLI installer
-export PATH="/Users/dna/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
 
 # Added by Antigravity IDE
-export PATH="/Users/dna/.antigravity-ide/antigravity-ide/bin:$PATH"
+export PATH="$HOME/.antigravity-ide/antigravity-ide/bin:$PATH"
 
 # opencode
-export PATH=/Users/dna/.opencode/bin:$PATH
+export PATH=$HOME/.opencode/bin:$PATH
+
+# == Android SDK / JDK 17 ==
+export JAVA_HOME="/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home"
+export ANDROID_HOME="/opt/homebrew/share/android-commandlinetools"
+export ANDROID_SDK_ROOT="$ANDROID_HOME"
+export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$PATH"
