@@ -1,0 +1,12 @@
+{
+  "fim": {
+    "matches": 8,
+    "n": 12,
+    "mean_ms": 529.79
+  },
+  "chat": {
+    "matches": 8,
+    "n": 12,
+    "mean_ms": 343.23
+  }
+}

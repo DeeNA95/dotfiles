@@ -1,0 +1,36 @@
+{
+  "nonstream": {
+    "display_ms": {
+      "n": 8,
+      "mean_ms": 816.2,
+      "p90_ms": 1029
+    },
+    "first_text_ms": {
+      "n": 8,
+      "mean_ms": 569.2,
+      "p90_ms": 779
+    },
+    "response_ms": {
+      "n": 8,
+      "mean_ms": 569,
+      "p90_ms": 779
+    }
+  },
+  "stream": {
+    "display_ms": {
+      "n": 8,
+      "mean_ms": 459.8,
+      "p90_ms": 566
+    },
+    "first_text_ms": {
+      "n": 8,
+      "mean_ms": 262.6,
+      "p90_ms": 371
+    },
+    "response_ms": {
+      "n": 8,
+      "mean_ms": 418.9,
+      "p90_ms": 449
+    }
+  }
+}

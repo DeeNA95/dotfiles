@@ -1,0 +1,130 @@
+{
+  "fim-current": {
+    "scored": 22,
+    "matches": 4,
+    "matching_cases": [
+      "py-json:0",
+      "js-map:0",
+      "py-square:1",
+      "lua-concat:1"
+    ]
+  },
+  "fim-boundary": {
+    "scored": 22,
+    "matches": 17,
+    "matching_cases": [
+      "py-add:0",
+      "py-square:0",
+      "py-len:0",
+      "py-json:0",
+      "py-filter:0",
+      "lua-clamp:0",
+      "lua-guard:0",
+      "js-map:0",
+      "py-add:1",
+      "py-square:1",
+      "py-len:1",
+      "py-json:1",
+      "py-filter:1",
+      "lua-clamp:1",
+      "lua-concat:1",
+      "lua-guard:1",
+      "js-map:1"
+    ]
+  },
+  "chat-current": {
+    "scored": 22,
+    "matches": 17,
+    "matching_cases": [
+      "py-add:0",
+      "py-square:0",
+      "py-len:0",
+      "py-json:0",
+      "py-filter:0",
+      "lua-insert:0",
+      "lua-concat:0",
+      "lua-guard:0",
+      "js-map:0",
+      "py-add:1",
+      "py-square:1",
+      "py-len:1",
+      "py-filter:1",
+      "lua-insert:1",
+      "lua-concat:1",
+      "lua-guard:1",
+      "js-map:1"
+    ]
+  },
+  "chat-normalized": {
+    "scored": 22,
+    "matches": 22,
+    "matching_cases": [
+      "py-add:0",
+      "py-square:0",
+      "py-len:0",
+      "py-json:0",
+      "py-filter:0",
+      "lua-insert:0",
+      "lua-clamp:0",
+      "lua-concat:0",
+      "lua-guard:0",
+      "js-map:0",
+      "rs-len:0",
+      "py-add:1",
+      "py-square:1",
+      "py-len:1",
+      "py-json:1",
+      "py-filter:1",
+      "lua-insert:1",
+      "lua-clamp:1",
+      "lua-concat:1",
+      "lua-guard:1",
+      "js-map:1",
+      "rs-len:1"
+    ]
+  },
+  "timing": {
+    "fim": {
+      "nonstream_total": {
+        "n": 12,
+        "mean_ms": 516.39,
+        "p90_ms": 765.14
+      },
+      "stream_total": {
+        "n": 12,
+        "mean_ms": 664.54,
+        "p90_ms": 871.54
+      },
+      "stream_first_text": {
+        "n": 12,
+        "mean_ms": 182.86,
+        "p90_ms": 194.67
+      }
+    },
+    "chat": {
+      "nonstream_total": {
+        "n": 12,
+        "mean_ms": 313.9,
+        "p90_ms": 344.18
+      },
+      "stream_total": {
+        "n": 12,
+        "mean_ms": 413.63,
+        "p90_ms": 432.28
+      },
+      "stream_first_text": {
+        "n": 12,
+        "mean_ms": 267.77,
+        "p90_ms": 275.57
+      }
+    }
+  },
+  "limitations": [
+    "12 short smoke fixtures, 2 observations per endpoint, not a repository-scale quality benchmark",
+    "py-default excluded from quality: fixture does not constrain the key/default",
+    "Python reconstructed AST must match reference; other languages use trimmed expected text",
+    "x*x and x**2 accepted for py-square",
+    "streamed and nonstreamed results scored separately for timing",
+    "suffix normalization is post hoc and requires held-out validation before adoption"
+  ]
+}

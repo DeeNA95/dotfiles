@@ -14,7 +14,21 @@ return {
   opts = {
     -- 'default' for mappings similar to built-in completion
     -- 'super-tab' for mappings similar to vscode (tab to accept, arrows to navigate)
-    keymap = { preset = "super-tab" },
+    keymap = {
+      preset = "super-tab",
+      ["<Tab>"] = {
+        function(cmp)
+          if cmp.is_visible() or cmp.snippet_active() then
+            if cmp.snippet_active() then return cmp.accept() end
+            return cmp.select_and_accept()
+          end
+          local qwen = package.loaded["qwen_complete"]
+          return qwen and qwen.accept_key()
+        end,
+        "snippet_forward",
+        "fallback",
+      },
+    },
 
     appearance = {
       -- Sets the fallback highlight groups to nvim-cmp's highlight groups

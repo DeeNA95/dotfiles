@@ -1,0 +1,12 @@
+{
+  "local_only": {
+    "n": 3,
+    "ast_matches": 1,
+    "nonempty": 2
+  },
+  "enriched": {
+    "n": 3,
+    "ast_matches": 1,
+    "nonempty": 1
+  }
+}

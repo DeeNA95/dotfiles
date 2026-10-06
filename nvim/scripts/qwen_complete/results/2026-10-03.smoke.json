@@ -1,0 +1,1 @@
+{"buffer":["def add(a, b):","    return a + b",""],"status":{"pending":false,"enabled":true,"stats":{"errors":0,"requests":1,"stale":0,"last_response_ms":980,"accepted":1,"cancelled":0,"shown":1,"last_display_ms":980},"api_url":"http://127.0.0.1:42069/v1/completions","model":"Qwen3.6-35B-A3B-ffn4-attn16","backend":"fim"},"ghost":"a + b"}
